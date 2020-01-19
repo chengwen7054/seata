@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,12 +13,11 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.rm.datasource.sql;
 
 import java.util.ArrayList;
+import java.util.List;
 
-import io.seata.rm.datasource.ParametersHolder;
 import io.seata.rm.datasource.ParametersHolder;
 
 /**
@@ -32,10 +31,10 @@ public interface WhereRecognizer extends SQLRecognizer {
      * Gets where condition.
      *
      * @param parametersHolder the parameters holder
-     * @param paramAppender    the param appender
+     * @param paramAppenderList    the param appender list
      * @return the where condition
      */
-    String getWhereCondition(ParametersHolder parametersHolder, ArrayList<Object> paramAppender);
+    String getWhereCondition(ParametersHolder parametersHolder, ArrayList<List<Object>> paramAppenderList);
 
     /**
      * Gets where condition.

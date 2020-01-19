@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,19 +13,18 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.core.rpc.netty;
 
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.seata.core.constants.ConfigurationKeys;
 
 /**
  * The type Netty server config.
  *
- * @author jimin.jm @alibaba-inc.com
- * @date 2018 /9/12
+ * @author slievrly
  */
 public class NettyServerConfig extends NettyBaseConfig {
 
@@ -49,12 +48,12 @@ public class NettyServerConfig extends NettyBaseConfig {
     /**
      * Shutdown timeout default 1s
      */
-    private static final int DEFAULT_SHUTDOWN_TIMEOUT_SEC = 1;
+    private static final int DEFAULT_SHUTDOWN_TIMEOUT_SEC = 3;
 
     /**
      * The Server channel clazz.
      */
-    public final Class<? extends ServerChannel> SERVER_CHANNEL_CLAZZ = NettyBaseConfig.SERVER_CHANNEL_CLAZZ;
+    public static final Class<? extends ServerChannel> SERVER_CHANNEL_CLAZZ = NettyBaseConfig.SERVER_CHANNEL_CLAZZ;
 
     /**
      * The constant DIRECT_BYTE_BUF_ALLOCATOR.
@@ -270,7 +269,7 @@ public class NettyServerConfig extends NettyBaseConfig {
      * @return the string
      */
     public String getBossThreadPrefix() {
-        return CONFIG.getConfig("transport.thread-factory.boss-thread-prefix", DEFAULT_BOSS_THREAD_PREFIX);
+        return CONFIG.getConfig(ConfigurationKeys.BOSS_THREAD_PREFIX, DEFAULT_BOSS_THREAD_PREFIX);
     }
 
     /**
@@ -279,7 +278,7 @@ public class NettyServerConfig extends NettyBaseConfig {
      * @return the string
      */
     public String getWorkerThreadPrefix() {
-        return CONFIG.getConfig("transport.thread-factory.worker-thread-prefix",
+        return CONFIG.getConfig(ConfigurationKeys.WORKER_THREAD_PREFIX,
             enableEpoll() ? EPOLL_WORKER_THREAD_PREFIX : NIO_WORKER_THREAD_PREFIX);
     }
 
@@ -289,7 +288,7 @@ public class NettyServerConfig extends NettyBaseConfig {
      * @return the string
      */
     public String getExecutorThreadPrefix() {
-        return CONFIG.getConfig("transport.thread-factory.server-executor-thread-prefix",
+        return CONFIG.getConfig(ConfigurationKeys.SERVER_EXECUTOR_THREAD_PREFIX,
             DEFAULT_EXECUTOR_THREAD_PREFIX);
     }
 
@@ -299,7 +298,7 @@ public class NettyServerConfig extends NettyBaseConfig {
      * @return the int
      */
     public int getBossThreadSize() {
-        return CONFIG.getInt("transport.thread-factory.boss-thread-size", DEFAULT_BOSS_THREAD_SIZE);
+        return CONFIG.getInt(ConfigurationKeys.BOSS_THREAD_SIZE, DEFAULT_BOSS_THREAD_SIZE);
     }
 
     /**
@@ -308,6 +307,6 @@ public class NettyServerConfig extends NettyBaseConfig {
      * @return the int
      */
     public int getServerShutdownWaitTime() {
-        return CONFIG.getInt("transport.shutdown.wait", DEFAULT_SHUTDOWN_TIMEOUT_SEC);
+        return CONFIG.getInt(ConfigurationKeys.SHUNDOWN_WAIT, DEFAULT_SHUTDOWN_TIMEOUT_SEC);
     }
 }

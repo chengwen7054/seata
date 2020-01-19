@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.rm.datasource;
 
 import java.sql.PreparedStatement;
@@ -21,8 +20,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import io.seata.rm.datasource.exec.ExecuteTemplate;
-import io.seata.rm.datasource.exec.StatementCallback;
 import io.seata.rm.datasource.exec.ExecuteTemplate;
 import io.seata.rm.datasource.exec.StatementCallback;
 
@@ -39,14 +36,6 @@ public class PreparedStatementProxy extends AbstractPreparedStatementProxy
         return parameters;
     }
 
-    private void init() throws SQLException {
-        int paramCount = targetStatement.getParameterMetaData().getParameterCount();
-        this.parameters = new ArrayList[paramCount];
-        for (int i = 0; i < paramCount; i++) {
-            parameters[i] = new ArrayList<>();
-        }
-    }
-
     /**
      * Instantiates a new Prepared statement proxy.
      *
@@ -58,7 +47,6 @@ public class PreparedStatementProxy extends AbstractPreparedStatementProxy
     public PreparedStatementProxy(AbstractConnectionProxy connectionProxy, PreparedStatement targetStatement,
                                   String targetSQL) throws SQLException {
         super(connectionProxy, targetStatement, targetSQL);
-        init();
     }
 
     @Override

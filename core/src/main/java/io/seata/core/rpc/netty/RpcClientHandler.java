@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.core.rpc.netty;
 
 import io.netty.channel.Channel;
@@ -27,8 +26,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The type Rpc client handler.
  *
- * @author jimin.jm @alibaba-inc.com
- * @date 2018 /9/12
+ * @author slievrly
  */
 public class RpcClientHandler extends ChannelDuplexHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RpcClientHandler.class);
@@ -50,7 +48,7 @@ public class RpcClientHandler extends ChannelDuplexHandler {
         final String request = (String)msg;
         try {
             ctx.writeAndFlush(request, ctx.voidPromise());
-            LOGGER.info("client:" + msg);
+            LOGGER.info("client:{}", msg);
 
         } catch (Exception e) {
             LOGGER.error("when try flush error", e);

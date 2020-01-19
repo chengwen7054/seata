@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ package io.seata.tm.api.transaction;
 
 /**
  * @author guoyao
- * @date 2019/4/17
  */
 public class NoRollbackRule extends RollbackRule {
+
+    public static final NoRollbackRule DEFAULT_NO_ROLLBACK_RULE = new NoRollbackRule(Throwable.class);
 
 
     public NoRollbackRule(Class<?> clazz) {
@@ -30,6 +31,16 @@ public class NoRollbackRule extends RollbackRule {
 
     public NoRollbackRule(String exceptionName) {
         super(exceptionName);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return super.equals(other);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 
     @Override

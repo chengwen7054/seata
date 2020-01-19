@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,10 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.rm.datasource.sql;
-
-import java.util.List;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -24,15 +21,7 @@ import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.druid.util.JdbcConstants;
-import io.seata.rm.datasource.sql.druid.MySQLDeleteRecognizer;
-import io.seata.rm.datasource.sql.druid.MySQLInsertRecognizer;
-import io.seata.rm.datasource.sql.druid.MySQLSelectForUpdateRecognizer;
-import io.seata.rm.datasource.sql.druid.MySQLUpdateRecognizer;
-import io.seata.rm.datasource.sql.druid.MySQLDeleteRecognizer;
-import io.seata.rm.datasource.sql.druid.MySQLInsertRecognizer;
-import io.seata.rm.datasource.sql.druid.MySQLSelectForUpdateRecognizer;
-import io.seata.rm.datasource.sql.druid.MySQLUpdateRecognizer;
+import java.util.List;
 
 /**
  * The type Sql visitor factory.
@@ -55,20 +44,16 @@ public class SQLVisitorFactory {
         }
         SQLRecognizer recognizer = null;
         SQLStatement ast = asts.get(0);
-        if (JdbcConstants.MYSQL.equalsIgnoreCase(dbType)) {
-            if (ast instanceof SQLInsertStatement) {
-                recognizer = new MySQLInsertRecognizer(sql, ast);
-            } else if (ast instanceof SQLUpdateStatement) {
-                recognizer = new MySQLUpdateRecognizer(sql, ast);
-            } else if (ast instanceof SQLDeleteStatement) {
-                recognizer = new MySQLDeleteRecognizer(sql, ast);
-            } else if (ast instanceof SQLSelectStatement) {
-                if (((SQLSelectStatement)ast).getSelect().getQueryBlock().isForUpdate()) {
-                    recognizer = new MySQLSelectForUpdateRecognizer(sql, ast);
-                }
-            }
-        } else {
-            throw new UnsupportedOperationException("Just support MySQL by now!");
+        SQLOperateRecognizerHolder recognizerHolder =
+            SQLOperateRecognizerHolderFactory.getSQLRecognizerHolder(dbType.toLowerCase());
+        if (ast instanceof SQLInsertStatement) {
+            recognizer = recognizerHolder.getInsertRecognizer(sql, ast);
+        } else if (ast instanceof SQLUpdateStatement) {
+            recognizer = recognizerHolder.getUpdateRecognizer(sql, ast);
+        } else if (ast instanceof SQLDeleteStatement) {
+            recognizer = recognizerHolder.getDeleteRecognizer(sql, ast);
+        } else if (ast instanceof SQLSelectStatement) {
+            recognizer = recognizerHolder.getSelectForUpdateRecognizer(sql, ast);
         }
         return recognizer;
     }

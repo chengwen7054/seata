@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,11 +13,19 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.spring.annotation;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.util.StringUtils;
+import io.seata.config.ConfigurationChangeEvent;
+import io.seata.config.ConfigurationChangeListener;
+import io.seata.config.ConfigurationFactory;
+import io.seata.core.constants.ConfigurationKeys;
 import io.seata.rm.GlobalLockTemplate;
 import io.seata.tm.api.DefaultFailureHandlerImpl;
 import io.seata.tm.api.FailureHandler;
@@ -34,19 +42,12 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.core.BridgeMethodResolver;
 import org.springframework.util.ClassUtils;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.concurrent.Callable;
-
 /**
  * The type Global transactional interceptor.
  *
- * @author jimin.jm @alibaba-inc.com
+ * @author slievrly
  */
-public class GlobalTransactionalInterceptor implements MethodInterceptor {
+public class GlobalTransactionalInterceptor implements ConfigurationChangeListener,MethodInterceptor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalTransactionalInterceptor.class);
     private static final FailureHandler DEFAULT_FAIL_HANDLER = new DefaultFailureHandlerImpl();
@@ -54,6 +55,7 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
     private final TransactionalTemplate transactionalTemplate = new TransactionalTemplate();
     private final GlobalLockTemplate<Object> globalLockTemplate = new GlobalLockTemplate<>();
     private final FailureHandler failureHandler;
+    private volatile boolean disable;
 
     /**
      * Instantiates a new Global transactional interceptor.
@@ -61,23 +63,23 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
      * @param failureHandler the failure handler
      */
     public GlobalTransactionalInterceptor(FailureHandler failureHandler) {
-        if (null == failureHandler) {
-            failureHandler = DEFAULT_FAIL_HANDLER;
-        }
-        this.failureHandler = failureHandler;
+        this.failureHandler = failureHandler == null ? DEFAULT_FAIL_HANDLER : failureHandler;
+        this.disable = ConfigurationFactory.getInstance().getBoolean(ConfigurationKeys.DISABLE_GLOBAL_TRANSACTION,
+            false);
     }
 
     @Override
     public Object invoke(final MethodInvocation methodInvocation) throws Throwable {
-        Class<?> targetClass = (methodInvocation.getThis() != null ? AopUtils.getTargetClass(methodInvocation.getThis()) : null);
+        Class<?> targetClass = methodInvocation.getThis() != null ? AopUtils.getTargetClass(methodInvocation.getThis())
+            : null;
         Method specificMethod = ClassUtils.getMostSpecificMethod(methodInvocation.getMethod(), targetClass);
         final Method method = BridgeMethodResolver.findBridgedMethod(specificMethod);
 
         final GlobalTransactional globalTransactionalAnnotation = getAnnotation(method, GlobalTransactional.class);
         final GlobalLock globalLockAnnotation = getAnnotation(method, GlobalLock.class);
-        if (globalTransactionalAnnotation != null) {
+        if (!disable && globalTransactionalAnnotation != null) {
             return handleGlobalTransaction(methodInvocation, globalTransactionalAnnotation);
-        } else if (globalLockAnnotation != null) {
+        } else if (!disable && globalLockAnnotation != null) {
             return handleGlobalLock(methodInvocation);
         } else {
             return methodInvocation.proceed();
@@ -85,17 +87,14 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
     }
 
     private Object handleGlobalLock(final MethodInvocation methodInvocation) throws Exception {
-        return globalLockTemplate.execute(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                try {
-                    return methodInvocation.proceed();
-                } catch (Throwable e) {
-                    if (e instanceof Exception) {
-                        throw (Exception)e;
-                    } else {
-                        throw new RuntimeException(e);
-                    }
+        return globalLockTemplate.execute(() -> {
+            try {
+                return methodInvocation.proceed();
+            } catch (Throwable e) {
+                if (e instanceof Exception) {
+                    throw (Exception)e;
+                } else {
+                    throw new RuntimeException(e);
                 }
             }
         });
@@ -162,17 +161,29 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
     }
 
     private <T extends Annotation> T getAnnotation(Method method, Class<T> clazz) {
-        if (method == null) {
-            return null;
-        }
-        return method.getAnnotation(clazz);
+        return method == null ? null : method.getAnnotation(clazz);
     }
 
     private String formatMethod(Method method) {
-        String paramTypes = Arrays.stream(method.getParameterTypes())
-                .map(Class::getName)
-                .reduce((p1, p2) -> String.format("%s, %s", p1, p2))
-                .orElse("");
-        return method.getName() + "(" + paramTypes + ")";
+        StringBuilder sb = new StringBuilder(method.getName()).append("(");
+
+        Class<?>[] params = method.getParameterTypes();
+        int in = 0;
+        for (Class<?> clazz : params) {
+            sb.append(clazz.getName());
+            if (++in < params.length) {
+                sb.append(", ");
+            }
+        }
+        return sb.append(")").toString();
+    }
+
+    @Override
+    public void onChangeEvent(ConfigurationChangeEvent event) {
+        if (ConfigurationKeys.DISABLE_GLOBAL_TRANSACTION.equals(event.getDataId())) {
+            LOGGER.info("{} config changed, old value:{}, new value:{}", ConfigurationKeys.DISABLE_GLOBAL_TRANSACTION,
+                disable, event.getNewValue());
+            disable = Boolean.parseBoolean(event.getNewValue().trim());
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.rm.datasource.sql.druid;
 
 import java.util.ArrayList;
@@ -21,10 +20,7 @@ import java.util.List;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLBetweenExpr;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.expr.SQLInListExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
@@ -32,6 +28,7 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+
 import io.seata.rm.datasource.ParametersHolder;
 import io.seata.rm.datasource.sql.SQLParsingException;
 import io.seata.rm.datasource.sql.SQLType;
@@ -42,7 +39,7 @@ import io.seata.rm.datasource.sql.SQLUpdateRecognizer;
  *
  * @author sharajava
  */
-public class MySQLUpdateRecognizer extends BaseRecognizer implements SQLUpdateRecognizer {
+public class MySQLUpdateRecognizer extends BaseMySQLRecognizer implements SQLUpdateRecognizer {
 
     private MySqlUpdateStatement ast;
 
@@ -74,7 +71,7 @@ public class MySQLUpdateRecognizer extends BaseRecognizer implements SQLUpdateRe
                 // This is alias case, like UPDATE xxx_tbl a SET a.name = ? WHERE a.id = ?
                 SQLExpr owner = ((SQLPropertyExpr)expr).getOwner();
                 if (owner instanceof SQLIdentifierExpr) {
-                    list.add((((SQLIdentifierExpr)owner).getName() + "." + ((SQLPropertyExpr)expr).getName()));
+                    list.add(((SQLIdentifierExpr)owner).getName() + "." + ((SQLPropertyExpr)expr).getName());
                 }
             } else {
                 throw new SQLParsingException("Unknown SQLExpr: " + expr.getClass() + " " + expr);
@@ -101,46 +98,16 @@ public class MySQLUpdateRecognizer extends BaseRecognizer implements SQLUpdateRe
     }
 
     @Override
-    public String getWhereCondition(final ParametersHolder parametersHolder, final ArrayList<Object> paramAppender) {
+    public String getWhereCondition(final ParametersHolder parametersHolder,
+                                    final ArrayList<List<Object>> paramAppenderList) {
         SQLExpr where = ast.getWhere();
-        if (where == null) {
-            return "";
-        }
-        StringBuffer sb = new StringBuffer();
-        MySqlOutputVisitor visitor = new MySqlOutputVisitor(sb) {
-
-            @Override
-            public boolean visit(SQLVariantRefExpr x) {
-                if ("?".equals(x.getName())) {
-                    ArrayList<Object> params = parametersHolder.getParameters()[x.getIndex()];
-                    paramAppender.add(params.get(0));
-                }
-                return super.visit(x);
-            }
-        };
-        visitor.visit((SQLBinaryOpExpr)where);
-        return sb.toString();
+        return super.getWhereCondition(where, parametersHolder, paramAppenderList);
     }
 
     @Override
     public String getWhereCondition() {
         SQLExpr where = ast.getWhere();
-        if (where == null) {
-            return "";
-        }
-
-        StringBuffer sb = new StringBuffer();
-        MySqlOutputVisitor visitor = new MySqlOutputVisitor(sb);
-
-        if (where instanceof SQLBetweenExpr) {
-            visitor.visit((SQLBetweenExpr)where);
-        } else if (where instanceof SQLInListExpr) {
-            visitor.visit((SQLInListExpr)where);
-        } else {
-            visitor.visit((SQLBinaryOpExpr)where);
-        }
-
-        return sb.toString();
+        return super.getWhereCondition(where);
     }
 
     @Override
@@ -150,7 +117,7 @@ public class MySQLUpdateRecognizer extends BaseRecognizer implements SQLUpdateRe
 
     @Override
     public String getTableName() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         MySqlOutputVisitor visitor = new MySqlOutputVisitor(sb) {
 
             @Override

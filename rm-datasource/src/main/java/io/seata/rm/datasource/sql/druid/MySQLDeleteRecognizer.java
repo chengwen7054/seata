@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,18 +13,17 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.rm.datasource.sql.druid;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+
 import io.seata.rm.datasource.ParametersHolder;
 import io.seata.rm.datasource.sql.SQLDeleteRecognizer;
 import io.seata.rm.datasource.sql.SQLType;
@@ -34,7 +33,7 @@ import io.seata.rm.datasource.sql.SQLType;
  *
  * @author sharajava
  */
-public class MySQLDeleteRecognizer extends BaseRecognizer implements SQLDeleteRecognizer {
+public class MySQLDeleteRecognizer extends BaseMySQLRecognizer implements SQLDeleteRecognizer {
 
     private final MySqlDeleteStatement ast;
 
@@ -61,7 +60,7 @@ public class MySQLDeleteRecognizer extends BaseRecognizer implements SQLDeleteRe
 
     @Override
     public String getTableName() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         MySqlOutputVisitor visitor = new MySqlOutputVisitor(sb) {
 
             @Override
@@ -75,37 +74,16 @@ public class MySQLDeleteRecognizer extends BaseRecognizer implements SQLDeleteRe
     }
 
     @Override
-    public String getWhereCondition(final ParametersHolder parametersHolder, final ArrayList<Object> paramAppender) {
+    public String getWhereCondition(final ParametersHolder parametersHolder,
+                                    final ArrayList<List<Object>> paramAppenderList) {
         SQLExpr where = ast.getWhere();
-        if (where == null) {
-            return "";
-        }
-        StringBuffer sb = new StringBuffer();
-        MySqlOutputVisitor visitor = new MySqlOutputVisitor(sb) {
-
-            @Override
-            public boolean visit(SQLVariantRefExpr x) {
-                if ("?".equals(x.getName())) {
-                    ArrayList<Object> params = parametersHolder.getParameters()[x.getIndex()];
-                    paramAppender.add(params.get(0));
-                }
-                return super.visit(x);
-            }
-        };
-        visitor.visit((SQLBinaryOpExpr)where);
-        return sb.toString();
+        return super.getWhereCondition(where, parametersHolder, paramAppenderList);
     }
 
     @Override
     public String getWhereCondition() {
         SQLExpr where = ast.getWhere();
-        if (where == null) {
-            return "";
-        }
-        StringBuffer sb = new StringBuffer();
-        MySqlOutputVisitor visitor = new MySqlOutputVisitor(sb);
-        visitor.visit((SQLBinaryOpExpr)where);
-        return sb.toString();
+        return super.getWhereCondition(where);
     }
 
 }

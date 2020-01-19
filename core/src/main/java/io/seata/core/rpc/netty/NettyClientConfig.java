@@ -1,5 +1,5 @@
 /*
- *  Copyright 1999-2018 Alibaba Group Holding Ltd.
+ *  Copyright 1999-2019 Seata.io Group.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,17 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package io.seata.core.rpc.netty;
 
-import io.seata.core.rpc.netty.NettyPoolKey.TransactionRole;
-
 import io.netty.channel.Channel;
+import io.seata.core.constants.ConfigurationKeys;
 
 /**
  * The type Netty client config.
  *
- * @author jimin.jm @alibaba-inc.com
+ * @author slievrly
  */
 public class NettyClientConfig extends NettyBaseConfig {
 
@@ -55,6 +53,7 @@ public class NettyClientConfig extends NettyBaseConfig {
     private static final boolean DEFAULT_POOL_TEST_BORROW = true;
     private static final boolean DEFAULT_POOL_TEST_RETURN = true;
     private static final boolean DEFAULT_POOL_LIFO = true;
+    private static final boolean ENABLE_CLIENT_BATCH_SEND_REQUEST = CONFIG.getBoolean(ConfigurationKeys.ENABLE_CLIENT_BATCH_SEND_REQUEST, true);
 
     /**
      * Gets connect timeout millis.
@@ -345,7 +344,7 @@ public class NettyClientConfig extends NettyBaseConfig {
      * @return the client selector thread size
      */
     public int getClientSelectorThreadSize() {
-        return CONFIG.getInt("transport.thread-factory.client-selector-thread-size", DEFAULT_SELECTOR_THREAD_SIZE);
+        return CONFIG.getInt(ConfigurationKeys.CLIENT_SELECTOR_THREAD_SIZE, DEFAULT_SELECTOR_THREAD_SIZE);
     }
 
     /**
@@ -363,8 +362,7 @@ public class NettyClientConfig extends NettyBaseConfig {
      * @return the string
      */
     public String getClientSelectorThreadPrefix() {
-        return CONFIG.getConfig("transport.thread-factory.client-selector-thread-prefix",
-            DEFAULT_SELECTOR_THREAD_PREFIX);
+        return CONFIG.getConfig(ConfigurationKeys.CLIENT_SELECTOR_THREAD_PREFIX, DEFAULT_SELECTOR_THREAD_PREFIX);
     }
 
     /**
@@ -373,7 +371,7 @@ public class NettyClientConfig extends NettyBaseConfig {
      * @return the string
      */
     public String getClientWorkerThreadPrefix() {
-        return CONFIG.getConfig("transport.thread-factory.client-worker-thread-prefix", DEFAULT_WORKER_THREAD_PREFIX);
+        return CONFIG.getConfig(ConfigurationKeys.CLIENT_WORKER_THREAD_PREFIX, DEFAULT_WORKER_THREAD_PREFIX);
     }
 
     /**
@@ -446,5 +444,9 @@ public class NettyClientConfig extends NettyBaseConfig {
      */
     public String getRmDispatchThreadPrefix() {
         return RPC_DISPATCH_THREAD_PREFIX + "_" + NettyPoolKey.TransactionRole.RMROLE.name();
+    }
+
+    public static boolean isEnableClientBatchSendRequest() {
+        return ENABLE_CLIENT_BATCH_SEND_REQUEST;
     }
 }
